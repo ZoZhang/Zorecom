@@ -7,6 +7,7 @@
 #
 remote_host_list=("z18013171 Fg.123456 127.0.0.1 22")
 select_host_list=()
+host_vm_list=()
 
 ###
 ##======================= Helper Functions =============================##
@@ -32,7 +33,7 @@ function string_convert_array()
 {
   i=1
   j=0
-  pos=4
+  pos=$2
   return_array=()
   while((1==1))
   do
@@ -95,7 +96,7 @@ function select_host_list_dialog()
    fi
 
    #convert full string to array
-   string_convert_array "${select_host}"
+   string_convert_array "${select_host}" "4"
 
    #save selected host to list
    for ((i=0;i<${#return_array[@]};i++))
@@ -155,6 +156,7 @@ function get_all_vm()
 {
   select_host_list_dialog
 
+  # get remote vm by host
   if [ "0" ==  ${#select_host_list[0]} ];
    then
       show_warning_dialog "Veuillez sélectionner le serveur cible pour exécuter la commande"
@@ -162,12 +164,35 @@ function get_all_vm()
    else
 
       for host in "${select_host_list[@]}"
-     do
+      do
        get_host_info "$host"
-       excute_remote_command "$username@$ip -p $port" "VBoxManage list vms"
-     done
+       temp_vms_info=$(excute_remote_command "$username@$ip -p $port" "VBoxManage list vms &")
 
+       echo $temp_vms_info
+       exit 1
+       string_convert_array "$temp_vms_info" "2"
+
+       if [ "${#return_array[@]}" > "1" ];
+       then
+         for vm in "${return_array[@]}"
+         do
+
+           vm_name=$(echo $vm | cut -d " " -f1)
+           vm_id=$(echo $vm | cut -d " " -f2)
+
+           temp_vms_info=$(excute_remote_command "$username@$ip -p $port" "bash -c VBoxManage showvminfo $vm_id --machinereadable &")
+
+           echo "$temp_vms_info"
+
+            exit 1
+           #
+         done
+        else
+          show_warning_dialog "Il n'y aucune machine."
+        fi
+     done
    fi
+
 }
 
 ###
