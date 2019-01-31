@@ -78,7 +78,7 @@ function show_notification()
 # Show a warning dialog
 function show_warning_dialog()
 {
-  zenity --info --title="Sélectez les serveurs" --text="$1"
+  zenity --info --title="Warning Info" --text="$1"
 }
 
 # Show host list dialog for add a remote service
@@ -175,7 +175,7 @@ function get_all_vm_dialog()
      if [ "${#host_vm_list[@]}" > "1" ];
      then
 
-       all_vm_selected_list=$(zenity --width=800 --height=650 --list --title="List les vms" --separator="|" --column="Nom" --column="Etat" --column="Systéme" --column="Nombre du cpu" --column="Taille Mémeoire" --column="Machine Hôte" ${host_vm_list[@]})
+       all_vm_selected_list=$(zenity --width=800 --height=650 --list  --multiple --print-column=ALL --title="List les vms" --separator=" " --column="Nom" --column="Etat" --column="Systéme" --column="Nombre du cpu" --column="Taille Mémeoire" --column="Machine Hôte" ${host_vm_list[@]})
 
         if [ $? != "0" ]
         then
@@ -199,85 +199,44 @@ function manipulate_one_vm_dialog()
   if [ "0" ==  ${#select_host_list[0]} ];
    then
       show_warning_dialog "Veuillez sélectionner le serveur cible pour exécuter la commande"
-      manipulate_one_vm_dialog
+      manipulate_one_vm_dialog $1
    else
 
+      get_all_vm_dialog
 
-
-          #
-          #
-          # case "$1" in
-          #   "START_VM")
-          #    manipulate_one_vm_dialog "start"
-          #    show_command_menu_dialog
-          #   ;;
-          #
-          #   "PAUSE_VM")
-          #    manipulate_one_vm_dialog "pause"
-          #    show_command_menu_dialog
-          #   ;;
-          #
-          #   "STOP_VM")
-          #    manipulate_one_vm_dialog "stop"
-          #    show_command_menu_dialog
-          #   ;;
-          #
-          #   "RESTART_VM")
-          #    manipulate_one_vm_dialog "restart"
-          #    show_command_menu_dialog
-          #   ;;
-          # esac
-          #
-
-      host_vm_list=()
-
-      for host in "${select_host_list[@]}"
-      do
-       get_host_info "$host"
-       temp_vms_info=$(excute_remote_command "$username@$ip -p $port" "VBoxManage list vms &")
-
-       string_convert_array "$temp_vms_info" "2"
-
-       if [ "${#return_array[@]}" > "1" ];
+      if [ "${#all_vm_selected_list[@]}" > "1" ];
        then
-         for vm in "${return_array[@]}"
+
+         select_vm_list=()
+         #convert full string to array
+         string_convert_array "${all_vm_selected_list}" "6"
+
+         #save selected host to list
+         for ((i=0;i<${#return_array[@]};i++))
          do
-           vm_id=$(echo $vm | cut -d " " -f2)
-           temp_vms_info=$(excute_remote_command "$username@$ip -p $port" "VBoxManage showvminfo $vm_id --machinereadable &")
-
-           vm_name=$(echo "$temp_vms_info" | awk '{match($0, /name="(.[^"]+?)/, matchs);print matchs[1]}')
-           VMState=$(echo "$temp_vms_info" | awk '{match($0, /VMState="(.[^"]+?)/, matchs);print matchs[1]}')
-
-           if [ "aborted" == $VMState ] | [ "poweroff" == $VMState ]
-           then
-
-             echo $vm_id
-
-
-           fi
-
-
-
-           #host_vm_list=("${host_vm_list[@]}" "$vm_name $VMState $ostype $cpus $memory"MB" $ip" )
+           select_vm_list=("${select_vm_list[@]}" "${return_array[$i]}")
          done
 
-          #$(zenity --width=800 --list --title="List les vms" --separator="|" --column="Nom" --column="Etat" --column="Systéme" --column="Nombre du cpu" --column="Taille Mémeoire" --column="Machine Hôte" ${host_vm_list[@]})
+          # case "$1" in
+          #   "start")
+          #   ;;
+          #
+          #   "pause")
+          #   ;;
+          #
+          #   "stop")
+          #   ;;
+          #
+          #   "restart")
+          #   ;;
+          # esac
 
-          if [ $? != "0" ]
-          then
-             show_command_menu_dialog
-             exit 1
-          fi
-
-        else
-          show_warning_dialog "Il n'y aucune machine."
-        fi
-     done
+      else
+        show_warning_dialog "Il n'y aucune machine."
+      fi
+ 
    fi
 }
-
-
-
 
 # Show VirutalBox Manage command list menu
 function show_command_menu_dialog()
