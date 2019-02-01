@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# a simple remote command execution script
+# Simple remote management virtualbox command tool based on zenity
 #
 # @author Zhao ZHANG <zo.zhang@gmail.com>
 # Usage: ./zorecom.sh
 #
-remote_host_list=("z18013171 Fg.123456 10.203.9.106 22 d18025352 test 10.203.9.107 22 b17026741 test 10.203.9.108 22")
+remote_host_list=()
 select_host_list=()
 host_vm_list=()
 
@@ -184,7 +184,7 @@ function get_vm_command()
 
      "delete")
       get_vm_command "stop"  "$2"
-      manipulate_command+="VBoxManage unregister \"$2\" --delete;"
+      manipulate_command+="VBoxManage unregistervm \"$2\" --delete;"
      ;;
 
   esac
@@ -422,9 +422,10 @@ function show_config_modity_vm_dialog()
     temp_vms_info=$(excute_remote_command "$1" "$manipulate_command")
 }
 
-# Start, stop, restart, shut down a virtual machine
+# Start, stop, restart, delete, shut down a virtual machine
 function manipulate_some_vm_dialog()
 {
+
   get_all_vm_dialog "$1"
 
   # get remote vm by host
@@ -565,9 +566,11 @@ function delete_all_vm()
         for vm in "${return_array[@]}"
         do
           vm_id=$(echo $vm | cut -d " " -f2)
-          #temp_vms_info=$(excute_remote_command "$username@$ip -p $port" "VBoxManage unregister $vm_id --delete &")
-          #vm_name=$(echo "$temp_vms_info" | awk '{match($0, /name="(.[^"]+?)/, matchs);print matchs[1]}')
+          vm_name=$(echo $vm | cut -d " " -f1)
 
+          #get vm command
+          get_vm_command "delete" "$vm_id"
+          temp_vms_info=$(excute_remote_command "$username@$ip -p $port" "$manipulate_command")
           show_notification "La machine virtuelle $vm_name dans $ip a été supprimée."
         done
       fi
@@ -675,7 +678,7 @@ function run()
 ##======================= Lance programe =============================##
 ###
 
-#show_warning_dialog "\n\n\nCet outil ne fonctionne que si openssh est déjà autorisé.\n\nParce qu'il ne utilise pas des tiers outils comme sshpass ou expert."
+show_warning_dialog "\n\n\nCet outil ne fonctionne que si openssh est déjà autorisé.\n\nParce qu'il ne utilise pas des tiers outils comme sshpass ou expert."
 
 run
 
